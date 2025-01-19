@@ -6,65 +6,77 @@ import { OrbitControls, Text, Stars, Html, useTexture, Line } from '@react-three
 import * as THREE from 'three';
 import { Octokit } from 'octokit';
 
-const octokit = new Octokit({
-  auth: process.env.NEXT_PUBLIC_GITHUB_TOKEN
-});
+// Utility type to handle potential undefined values
+type Nullable<T> = T | null | undefined;
+
+// Explicitly define Vector3Type to match THREE.Vector3
+type Vector3Type = [number, number, number];
+
+// Detailed type definitions with comprehensive type guards
+interface IBranch {
+  name: string;
+  position: Vector3Type;
+  commitCount: number;
+}
+
+interface ICommit {
+  message: string;
+  author: string;
+  date: string;
+  position: Vector3Type;
+}
+
+interface IPullRequest {
+  start: Vector3Type;
+  end: Vector3Type;
+  status: 'open' | 'closed' | 'merged';
+  title: string;
+  number: number;
+  user: Nullable<string>;
+}
+
+interface IContributor {
+  login: string;
+  avatar_url: string;
+  contributions: number;
+  type: 'User' | 'Bot';
+}
+
+interface IRepoInfo {
+  full_name: string;
+  description: string | null;
+  stargazers_count: number;
+  forks_count: number;
+  open_issues_count: number;
+}
+
+interface IRepoData {
+  branches: IBranch[];
+  commits: ICommit[];
+  pullRequests: IPullRequest[];
+  contributors: IContributor[];
+  info: Nullable<IRepoInfo>;
+}
 
 interface Props {
   repoUrl: string;
 }
 
-type Vector3 = [number, number, number];
+// Initialize Octokit with a safe type
+const octokit = new Octokit({
+  auth: process.env.NEXT_PUBLIC_GITHUB_TOKEN || ''
+});
 
-interface RepoData {
-  branches: Branch[];
-  commits: Commit[];
-  pullRequests: PullRequest[];
-  contributors: Contributor[];
-  info: RepoInfo | null;
-}
-
-interface Branch {
-  name: string;
-  position: Vector3;
-  commitCount: number;
-}
-
-interface Commit {
-  message: string;
-  author: string;
-  date: string;
-  position: Vector3;
-}
-
-interface PullRequest {
-  start: Vector3;
-  end: Vector3;
-  status: 'merged' | 'closed' | 'open';
-  title: string;
-  number: number;
-  user: string;
-}
-
-interface Contributor {
-  login: string;
-  avatar_url: string;
-  contributions: number;
-}
-
-interface RepoInfo {
-  full_name: string;
-  description: string;
-  stargazers_count: number;
-  forks_count: number;
-  open_issues_count: number;
+// Utility function to safely convert Vector3Type to THREE.Vector3
+function toThreeVector3(position: Vector3Type): THREE.Vector3 {
+  return new THREE.Vector3(...position);
 }
 
 function Branch({ position, name, commits }: { position: THREE.Vector3; name: string; commits: number }) {
   const [hovered, setHovered] = useState(false);
   const meshRef = useRef<THREE.Mesh>(null);
 
-  useFrame((state) => {
+  useFrame(() => {
     if (meshRef.current) {
       meshRef.current.rotation.x += 0.01;
     }
@@ -106,7 +118,7 @@ function Commit({ position, message, author, date }: {
   const [hovered, setHovered] = useState(false);
   const meshRef = useRef<THREE.Mesh>(null);
 
-  useFrame((state) => {
+  useFrame(() => {
     if (meshRef.current) {
       meshRef.current.rotation.y += 0.02;
     }
@@ -141,11 +153,18 @@ function Commit({ position, message, author, date }: {
   );
 }
 
-function Contributor({ position, avatar, login, contributions }: { 
+function Contributor({ 
+  position, 
+  avatar, 
+  login, 
+  contributions, 
+  type 
+}: { 
   position: THREE.Vector3; 
   avatar: string;
   login: string;
   contributions: number;
+  type: 'User' | 'Bot';
 }) {
   const [hovered, setHovered] = useState(false);
   const meshRef = useRef<THREE.Mesh>(null);
@@ -156,7 +175,7 @@ function Contributor({ position, avatar, login, contributions }: {
   // Create particle system for sparkles
   const particlesCount = 50;
   const particlePositions = useMemo(() => {
-    const positions = [];
+    const positions: number[] = [];
     for (let i = 0; i < particlesCount; i++) {
       const theta = Math.random() * Math.PI * 2;
       const radius = 0.6 + Math.random() * 0.4;
@@ -169,7 +188,7 @@ function Contributor({ position, avatar, login, contributions }: {
     return new Float32Array(positions);
   }, []);
 
-  useFrame((state) => {
+  useFrame(() => {
     if (meshRef.current) {
       meshRef.current.rotation.y += 0.01;
     }
@@ -263,11 +282,11 @@ function Contributor({ position, avatar, login, contributions }: {
               />
               <div>
                 <div className="font-semibold">{login}</div>
-                <div className="text-xs text-blue-400">Top Contributor</div>
+                <div className="text-xs text-blue-400">{type}</div>
               </div>
             </div>
             <div className="space-y-2">
-              <div className="flex justify-between items-center bg-white/5 p-2 rounded">
+              <div className="flex justify-between items-center bg-white/5 p-2 rounded-lg">
                 <span className="text-sm text-gray-300">Contributions</span>
                 <span className="font-mono text-green-400 font-bold">{contributions.toLocaleString()}</span>
               </div>
@@ -282,14 +301,30 @@ function Contributor({ position, avatar, login, contributions }: {
   );
 }
 
+function CommitConnection({ 
+  start, 
+  end 
+}: { 
+  start: THREE.Vector3; 
+  end: THREE.Vector3; 
+}) {
+  return (
+    <Line 
+      points={[start, end]} 
+      color="gray" 
+      lineWidth={1} 
+    />
+  );
+}
+
 function PullRequest({ start, end, status }: { 
   start: THREE.Vector3;
   end: THREE.Vector3;
   status: 'open' | 'closed' | 'merged';
 }) {
   const [hovered, setHovered] = useState(false);
-  const curve = useMemo(() => {
-    const points = [];
+  const curve = useMemo<THREE.Vector3[]>(() => {
+    const points: THREE.Vector3[] = [];
     const midPoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
     midPoint.y += 2; 
     
@@ -308,7 +343,7 @@ function PullRequest({ start, end, status }: {
   return (
     <group>
       <Line
-        points={curve}
+        points={curve as any}
         color={color}
         lineWidth={3}
         onPointerOver={() => setHovered(true)}
@@ -331,18 +366,6 @@ function PullRequest({ start, end, status }: {
   );
 }
 
-function CommitConnection({ start, end }: { start: THREE.Vector3; end: THREE.Vector3 }) {
-  return (
-    <Line
-      points={[start, end]}
-      color="#4a5568"
-      lineWidth={1}
-      transparent
-      opacity={0.3}
-    />
-  );
-}
-
 function Scene({ 
   branches, 
   commits, 
@@ -350,22 +373,18 @@ function Scene({
   pullRequests,
   theme
 }: { 
-  branches: Branch[]; 
-  commits: Commit[];
-  contributors: Contributor[];
-  pullRequests: PullRequest[];
+  branches: IBranch[]; 
+  commits: ICommit[];
+  contributors: IContributor[];
+  pullRequests: IPullRequest[];
   theme: any;
 }) {
-  // Create commit connections
-  const commitConnections = useMemo(() => {
-    const connections = [];
-    for (let i = 0; i < commits.length - 1; i++) {
-      connections.push({
-        start: new THREE.Vector3(...commits[i].position),
-        end: new THREE.Vector3(...commits[i + 1].position)
-      });
-    }
-    return connections;
+  // Create commit connections with explicit typing
+  const commitConnections = useMemo<{start: THREE.Vector3; end: THREE.Vector3}[]>(() => {
+    return commits.slice(0, -1).map((commit, i) => ({
+      start: toThreeVector3(commit.position),
+      end: toThreeVector3(commits[i + 1].position)
+    }));
   }, [commits]);
 
   return (
@@ -375,16 +394,20 @@ function Scene({
       <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
       
       {/* Commit Connections */}
-      {commitConnections.map((connection, i) => (
-        <CommitConnection key={`connection-${i}`} start={connection.start} end={connection.end} />
+      {commitConnections.map((connection, index) => (
+        <CommitConnection 
+          key={`commit-connection-${index}`}
+          start={connection.start} 
+          end={connection.end} 
+        />
       ))}
 
       {/* Pull Requests */}
       {pullRequests.map((pr, i) => (
         <PullRequest
           key={`pr-${i}`}
-          start={new THREE.Vector3(...pr.start)}
-          end={new THREE.Vector3(...pr.end)}
+          start={toThreeVector3(pr.start)}
+          end={toThreeVector3(pr.end)}
           status={pr.status}
         />
       ))}
@@ -400,13 +423,14 @@ function Scene({
           avatar={contributor.avatar_url}
           login={contributor.login}
           contributions={contributor.contributions}
+          type={contributor.type}
         />
       ))}
 
       {branches.map((branch, i) => (
         <Branch 
           key={i} 
-          position={new THREE.Vector3(...branch.position)} 
+          position={toThreeVector3(branch.position)} 
           name={branch.name}
           commits={branch.commitCount}
         />
@@ -415,7 +439,7 @@ function Scene({
       {commits.map((commit, i) => (
         <Commit 
           key={i} 
-          position={new THREE.Vector3(...commit.position)}
+          position={toThreeVector3(commit.position)}
           message={commit.message}
           author={commit.author}
           date={commit.date}
@@ -434,8 +458,8 @@ function Scene({
 
 export default function ARVisualization({ repoUrl }: Props) {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<RepoData>({
+  const [error, setError] = useState<Nullable<string>>(null);
+  const [data, setData] = useState<IRepoData>({
     branches: [],
     commits: [],
     pullRequests: [],
@@ -444,13 +468,13 @@ export default function ARVisualization({ repoUrl }: Props) {
   });
   const [highContrast, setHighContrast] = useState(false);
 
-  // Theme configuration
-  const theme = {
+  // Theme configuration with explicit typing
+  const theme = useMemo(() => ({
     background: highContrast ? '#000' : '#1a1a1a',
     text: highContrast ? '#fff' : '#e0e0e0',
     accent: highContrast ? '#ffff00' : '#7c3aed',
     panel: highContrast ? 'bg-black' : 'bg-black/90',
-  };
+  }), [highContrast]);
 
   useEffect(() => {
     async function fetchData() {
@@ -483,55 +507,78 @@ export default function ARVisualization({ repoUrl }: Props) {
           )
         );
 
-        const branches = branchesRes.data.map((branch, i) => ({
+        const branches: IBranch[] = branchesRes.data.map((branch, i) => ({
           name: branch.name,
           position: [
             Math.cos(i * (Math.PI * 2 / branchesRes.data.length)) * 3,
             2,
             Math.sin(i * (Math.PI * 2 / branchesRes.data.length)) * 3
-          ],
+          ] as Vector3Type,
           commitCount: branchCommits[i].commitCount
         }));
 
-        const commits = commitsRes.data.map((commit, i) => ({
+        const commits: ICommit[] = commitsRes.data.map((commit, i) => ({
           message: commit.commit.message,
           author: commit.author?.login || commit.commit.author?.name || 'Unknown',
-          date: commit.commit.author?.date,
+          date: commit.commit.author?.date || new Date().toISOString(),
           position: [
             Math.cos(i * 0.5) * 1.5,
             -i * 0.5,
             Math.sin(i * 0.5) * 1.5
-          ]
+          ] as Vector3Type
         }));
 
         // Process pull requests
-        const pullRequests = pullRequestsRes.data.map(pr => ({
+        const pullRequests: IPullRequest[] = pullRequestsRes.data.map(pr => ({
           start: [
             Math.cos(Math.random() * Math.PI * 2) * 3,
             Math.random() * 2,
             Math.sin(Math.random() * Math.PI * 2) * 3
-          ],
+          ] as Vector3Type,
           end: [
             Math.cos(Math.random() * Math.PI * 2) * 3,
             Math.random() * 2,
             Math.sin(Math.random() * Math.PI * 2) * 3
-          ],
+          ] as Vector3Type,
           status: pr.merged_at ? 'merged' : pr.closed_at ? 'closed' : 'open',
           title: pr.title,
           number: pr.number,
           user: pr.user?.login
         }));
 
+        // Safely map contributors
+        const contributors: IContributor[] = contributorsRes.data
+          .filter((contributor): contributor is IContributor => 
+            !!contributor.login && 
+            !!contributor.avatar_url && 
+            (contributor.type === 'User' || contributor.type === 'Bot')
+          )
+          .map(contributor => ({
+            login: contributor.login || 'Unknown',
+            avatar_url: contributor.avatar_url || '',
+            contributions: contributor.contributions || 0,
+            type: contributor.type === 'Bot' ? 'Bot' : 'User'
+          }));
+
+        // Safely map repository info
+        const info: IRepoInfo = {
+          full_name: repoRes.data.full_name,
+          description: repoRes.data.description || null,
+          stargazers_count: repoRes.data.stargazers_count,
+          forks_count: repoRes.data.forks_count,
+          open_issues_count: repoRes.data.open_issues_count
+        };
+
         setData({
           branches,
           commits,
           pullRequests,
-          contributors: contributorsRes.data,
-          info: repoRes.data
+          contributors,
+          info
         });
 
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
         setLoading(false);
       }
@@ -540,6 +587,7 @@ export default function ARVisualization({ repoUrl }: Props) {
     fetchData();
   }, [repoUrl]);
 
+  // Render loading state
   if (loading) {
     return (
       <div className="w-full h-[600px] flex items-center justify-center bg-black/20">
@@ -551,6 +599,7 @@ export default function ARVisualization({ repoUrl }: Props) {
     );
   }
 
+  // Render error state
   if (error) {
     return (
       <div className="w-full h-[600px] flex items-center justify-center bg-black/20">

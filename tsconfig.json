@@ -22,13 +22,24 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "three-stdlib": [
+        "./types/three-stdlib.d.ts"
+      ]
+    },
     "strictNullChecks": true
   },
   "include": [
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    ".next/types/**/*.tsx",
     "**/*.ts",
     "**/*.tsx",
-    "next-env.d.ts",
-    ".next/types/**/*.ts"
+    "types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

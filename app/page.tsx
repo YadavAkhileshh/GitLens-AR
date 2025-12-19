@@ -51,24 +51,27 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-800 text-white p-4">
+    <main className="min-h-screen bg-slate-900 text-slate-100 p-4 sm:p-6 lg:p-8">
       <div className="container mx-auto max-w-4xl">
         {!showAR ? (
           <div className="space-y-8 animate-fadeIn">
-            <div className="text-center space-y-4">
-              <h1 className="text-5xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
-                GitLens AR
+            <div className="text-center space-y-5">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-slate-50 tracking-tight">
+                GitLens <span className="text-indigo-400">AR</span>
               </h1>
-              <p className="text-xl text-gray-300">
-                Experience your GitHub repositories in Augmented Reality
+              <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+                Transform GitHub data into immersive 3D experiences with custom visualization algorithms
+              </p>
+              <p className="text-sm text-slate-500 italic">
+                Featuring unique pulsing animations, wave effects, and dynamic sizing
               </p>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 md:p-8 shadow-2xl">
+            <div className="bg-slate-800/60 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-xl border border-slate-700/50">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label htmlFor="repoUrl" className="block text-lg font-medium text-gray-200 mb-2">
-                    GitHub Repository URL
+                  <label htmlFor="repoUrl" className="block text-base font-medium text-slate-300 mb-3">
+                    Repository URL
                   </label>
                   <div className="relative">
                     <input
@@ -76,12 +79,12 @@ export default function Home() {
                       id="repoUrl"
                       value={repoUrl}
                       onChange={(e) => setRepoUrl(e.target.value)}
-                      className="w-full px-4 py-3 bg-white/5 border border-gray-500 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-white placeholder-gray-400"
+                      className="w-full px-4 py-3.5 bg-slate-900/50 border border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 text-slate-100 placeholder-slate-500"
                       placeholder="https://github.com/username/repo"
                       required
                     />
                     {error && (
-                      <p className="absolute -bottom-6 left-0 text-red-400 text-sm">
+                      <p className="absolute -bottom-6 left-0 text-rose-400 text-sm">
                         {error}
                       </p>
                     )}
@@ -91,7 +94,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 px-6 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg font-semibold text-white shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  className="w-full py-3.5 px-6 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-medium text-white shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center">
@@ -107,8 +110,8 @@ export default function Home() {
                 </button>
               </form>
 
-              <div className="mt-8 border-t border-gray-700 pt-6">
-                <h3 className="text-lg font-semibold mb-4">Features</h3>
+              <div className="mt-8 border-t border-slate-700 pt-6">
+                <h3 className="text-base font-medium text-slate-300 mb-5">What you'll see</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
                     { title: '3D Branch Trees', desc: 'Visualize branches in 3D space' },
@@ -116,9 +119,9 @@ export default function Home() {
                     { title: 'Contributor Avatars', desc: 'View contributor activity in space' },
                     { title: 'Visual Effects', desc: 'Beautiful animations for code changes' },
                   ].map((feature, i) => (
-                    <div key={i} className="bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors duration-200">
-                      <h4 className="font-medium text-purple-400">{feature.title}</h4>
-                      <p className="text-sm text-gray-300">{feature.desc}</p>
+                    <div key={i} className="bg-slate-900/40 rounded-xl p-4 hover:bg-slate-900/60 transition-all duration-200 border border-slate-800">
+                      <h4 className="font-medium text-slate-200 mb-1">{feature.title}</h4>
+                      <p className="text-sm text-slate-400">{feature.desc}</p>
                     </div>
                   ))}
                 </div>
@@ -130,7 +133,7 @@ export default function Home() {
             <div className="flex justify-between items-center">
               <button
                 onClick={handleReset}
-                className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors duration-200"
+                className="flex items-center space-x-2 text-slate-400 hover:text-slate-100 transition-colors duration-200"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -140,11 +143,11 @@ export default function Home() {
 
               <button
                 onClick={handleCopyLink}
-                className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-lg hover:bg-white/20 transition-colors duration-200"
+                className="flex items-center space-x-2 bg-slate-800/60 px-4 py-2 rounded-xl hover:bg-slate-700/60 transition-colors duration-200 border border-slate-700"
               >
                 {copied ? (
                   <>
-                    <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     <span>Copied!</span>
@@ -160,7 +163,7 @@ export default function Home() {
               </button>
             </div>
 
-            <div className="relative bg-black/30 rounded-xl overflow-hidden min-h-[600px]">
+            <div className="relative bg-slate-950/40 rounded-2xl overflow-hidden min-h-[600px] border border-slate-800">
               <ARVisualization repoUrl={repoUrl} />
               <Footer />
             </div>
